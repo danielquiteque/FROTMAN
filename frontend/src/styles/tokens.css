@@ -1,0 +1,23 @@
+:root {
+  --bic: #0b4fd6;
+  --bic-deep: #082f86;
+  --bic-darker: #061f5c;
+  --cream: #f2efe6;
+  --cream-2: #e7e2d3;
+  --card: #fffdf8;
+  --line: #e1dbc9;
+  --line-on-dark: rgba(255, 255, 255, 0.14);
+  --ink: #101b33;
+  --muted: #6b7180;
+  --muted-on-dark: #a9bbef;
+  --orange: #ff7a29;
+  --orange-dim: rgba(255, 122, 41, 0.14);
+  --orange-deep: #d6591a;
+  --teal: #1c9c82;
+  --teal-dim: rgba(28, 156, 130, 0.13);
+  --red: #e14848;
+  --red-dim: rgba(225, 72, 72, 0.13);
+  --violet: #6c5ce7;
+  --violet-dim: rgba(108, 92, 231, 0.13);
+  --radius: 12px;
+}
