@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+
+# Ambiente
+.env
+!.env.example
+
+# Uploads (conteúdo enviado pelo usuário não deve ir pro repo)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Editor / SO
+.DS_Store
+.vscode/
+*.log
