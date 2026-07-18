@@ -255,9 +255,7 @@ palavras-chave de urgência.
 ---
 
 ## 7. Link do Endpoint
-
-[preencher após o deploy — ver guia de deploy no repositório]
-
+https://frotman.onrender.com
 ---
 
 ## 8. Próximos Passos (Integração Real de IA)
