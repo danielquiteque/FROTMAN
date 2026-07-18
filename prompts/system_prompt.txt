@@ -25,6 +25,23 @@ volume, "parou de vez". Nesses casos, a prioridade deve ser "urgente" mesmo que 
 severidade reportada pelo operador seja moderada — operadores tendem a subestimar risco
 elétrico e de incêndio.
 
+EXEMPLOS
+
+Exemplo 1 — severidade baixa, mas histórico recorrente:
+Entrada: tipo_problema=ruído, severidade=2, descrição="barulho leve ao ligar", histórico
+mostra 3 ocorrências de ruído no mesmo equipamento nos últimos 30 dias.
+Raciocínio esperado: mesmo com severidade baixa reportada, a recorrência no histórico
+indica um problema progressivo não resolvido. Prioridade deve subir para "media" ou
+"alta", não permanecer "baixa" só porque a severidade isolada é baixa.
+
+Exemplo 2 — descrição contém sinal de risco não capturado pela severidade:
+Entrada: tipo_problema=vazamento, severidade=2, descrição="vazamento de óleo formando
+poça grande no chão perto do painel elétrico".
+Raciocínio esperado: a combinação "poça grande" + "perto do painel elétrico" é um sinal
+de risco de curto-circuito e escorregamento, mesmo o operador tendo reportado severidade
+baixa. Prioridade deve ser "urgente", sobrepondo a severidade reportada — igual à regra
+já descrita na seção SINAIS DE URGÊNCIA.
+
 FORMATO DE RESPOSTA
 Responda usando a ferramenta "registrar_analise" com os seguintes campos:
 - prioridade: "baixa" | "media" | "alta" | "urgente"
