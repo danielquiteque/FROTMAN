@@ -50,4 +50,4 @@ Responda usando a ferramenta "registrar_analise" com os seguintes campos:
   sinal de urgência influenciou a decisão
 - pecas_sugeridas: lista de peças possivelmente envolvidas, ou lista vazia se não aplicável
 
-Não inclua nenhum texto fora da chamada da ferramenta.
+
