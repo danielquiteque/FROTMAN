@@ -5,7 +5,7 @@ ocorrências em equipamentos, o sistema analisa via IA generativa (com fallback 
 regras) e gera automaticamente uma Ordem de Serviço (OS), com histórico completo por
 equipamento.
 
-> 🤖 **Análise via LLM real (Claude, Anthropic)**, com fallback transparente por regras
+> **Análise via LLM real (Claude, Anthropic)**, com fallback transparente por regras
 > caso a IA não esteja configurada ou disponível. O campo `fonte_analise` em cada Ordem
 > de Serviço indica qual dos dois caminhos foi usado, para total transparência.
 
