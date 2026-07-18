@@ -31,9 +31,9 @@ export function AppSidebar() {
 
       <div className="sidebar-footer">
         <span className="pulse-dot" />
-        Análise simulada por regras.
+        Análise via IA (Claude), com fallback
         <br />
-        Nenhum modelo de IA está integrado nesta versão.
+        automático por regras se indisponível.
       </div>
     </div>
   );

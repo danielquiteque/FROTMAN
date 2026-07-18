@@ -229,8 +229,24 @@ export function ReportarOcorrencia() {
                     <Badge tipo="prioridade" valor={resultado.prioridade} />
                   </div>
                   <div className="result-row">
-                    <span className="k">Causa provável (mock)</span>
+                    <span className="k">Causa provável</span>
                     <span>{resultado.causa_provavel}</span>
+                  </div>
+                  {resultado.justificativa && (
+                    <div className="result-row">
+                      <span className="k">Justificativa da IA</span>
+                      <span>{resultado.justificativa}</span>
+                    </div>
+                  )}
+                  {resultado.pecas_sugeridas.length > 0 && (
+                    <div className="result-row">
+                      <span className="k">Peças sugeridas</span>
+                      <span>{resultado.pecas_sugeridas.join(", ")}</span>
+                    </div>
+                  )}
+                  <div className="result-row">
+                    <span className="k">Fonte da análise</span>
+                    <span className="mono">{resultado.fonte_analise}</span>
                   </div>
                   <div className="result-row">
                     <span className="k">OS gerada</span>
@@ -240,8 +256,9 @@ export function ReportarOcorrencia() {
               )}
               {erroEnvio && <p className="error">{erroEnvio}</p>}
               <p style={{ color: "var(--muted)", fontSize: 12, marginTop: 12 }}>
-                * Análise simulada por regras. Nenhum modelo de IA está integrado nesta versão. Em produção,
-                esta etapa poderia ser substituída por um LLM real.
+                * Análise gerada por Claude (Anthropic) com tool use — consulta o histórico do
+                equipamento e uma base de causas conhecidas antes de responder. Se a IA estiver
+                indisponível, o sistema usa um fallback por regras automaticamente.
               </p>
             </>
           )}

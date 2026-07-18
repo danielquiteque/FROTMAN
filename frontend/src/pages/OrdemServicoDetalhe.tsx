@@ -100,8 +100,24 @@ export function OrdemServicoDetalhe() {
 
         <div className="detail-grid">
           <div className="detail-item">
-            <div className="k">Causa provável (mock)</div>
+            <div className="k">Causa provável</div>
             <div className="v">{ordem.causa_provavel}</div>
+          </div>
+          {ordem.justificativa && (
+            <div className="detail-item" style={{ gridColumn: "1 / -1" }}>
+              <div className="k">Justificativa da IA</div>
+              <div className="v">{ordem.justificativa}</div>
+            </div>
+          )}
+          {ordem.pecas_sugeridas && ordem.pecas_sugeridas.length > 0 && (
+            <div className="detail-item">
+              <div className="k">Peças sugeridas</div>
+              <div className="v">{ordem.pecas_sugeridas.join(", ")}</div>
+            </div>
+          )}
+          <div className="detail-item">
+            <div className="k">Fonte da análise</div>
+            <div className="v mono" style={{ fontSize: 11.5 }}>{ordem.fonte_analise}</div>
           </div>
           <div className="detail-item">
             <div className="k">Severidade reportada</div>

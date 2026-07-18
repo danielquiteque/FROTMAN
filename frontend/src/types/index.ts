@@ -19,6 +19,9 @@ export interface OrdemServico {
   ocorrencia_id: number;
   prioridade: Prioridade;
   causa_provavel?: string | null;
+  justificativa?: string | null;
+  pecas_sugeridas?: string[] | null;
+  fonte_analise: string;
   status: StatusOS;
   observacoes_tecnico?: string | null;
   tecnico_responsavel: string;
@@ -57,6 +60,9 @@ export interface HistoricoEquipamento {
 export interface AnaliseResultado {
   prioridade: Prioridade;
   causa_provavel: string;
+  justificativa?: string | null;
+  pecas_sugeridas: string[];
+  fonte_analise: string;
   ordem_servico_id: number;
   ocorrencia_id: number;
 }

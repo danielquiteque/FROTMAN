@@ -7,7 +7,7 @@ import type { DashboardKPIs } from "../types";
 const FAQS = [
   {
     q: "A IA já está integrada no sistema?",
-    a: "Ainda não. Nesta fase, todas as respostas de priorização e causa provável são simuladas (mock) por regras condicionais e palavras-chave, para validar a interface e o fluxo antes de integrar um LLM real.",
+    a: "Sim. A análise de prioridade e causa provável é feita por Claude (Anthropic), com ferramentas (tool use) para consultar o histórico do equipamento e uma base de causas conhecidas. Se a IA estiver indisponível, o sistema cai automaticamente em um fallback por regras, de forma transparente.",
   },
   {
     q: "Como a prioridade é definida hoje?",
@@ -193,7 +193,7 @@ export function Landing() {
           </div>
           <div className="foot-bottom">
             <div>© 2026 FROTMAN · Projeto acadêmico</div>
-            <div>Análise simulada por regras. Nenhum modelo de IA está integrado nesta versão.</div>
+            <div>Análise via LLM real (Claude), com fallback transparente por regras.</div>
           </div>
         </div>
       </footer>
