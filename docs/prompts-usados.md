@@ -136,3 +136,66 @@ test: valida fluxo completo ponta a ponta (equipamento -> ocorrencia -> OS -> hi
 ```
 docs: README completo com processo de desenvolvimento e próximos passos de IA
 ```
+
+---
+
+## Parte 2 — Integração de IA Generativa Real (Avaliação Final)
+
+**Prompt utilizado (resumo):**
+> Substitua a análise mockada por regras por uma integração real com a API da Anthropic
+> (Claude), usando tool use para (1) buscar histórico do equipamento, (2) consultar base
+> de causas conhecidas e (3) forçar saída estruturada. Mantenha um fallback automático e
+> transparente para as regras da Parte 1 caso a IA falhe ou não esteja configurada.
+> Documente o system prompt e as tools em arquivos próprios (prompts/, tools/).
+
+**O que funcionou bem:**
+- O padrão de fallback em camadas (sem chave → erro de API → não convergência) foi
+  testado nos três cenários e nunca quebrou o fluxo do usuário — sempre retornou uma
+  análise usável, com o campo `fonte_analise` indicando a origem real.
+- Usar uma tool dedicada (`registrar_analise`) como mecanismo de saída estruturada,
+  em vez de pedir "responda em JSON" no texto, eliminou problemas de parsing.
+
+**O que precisou de ajuste manual:**
+- A primeira versão do `requirements.txt` pinava `anthropic==0.39.0`, que gerava o erro
+  `Client.__init__() got an unexpected keyword argument 'proxies'` por incompatibilidade
+  com a versão mais recente do `httpx` instalada. Resolvido atualizando para
+  `anthropic==0.117.0`. Isso foi descoberto testando deliberadamente com uma chave
+  inválida antes de usar a chave real — o erro 401 correto só apareceu depois da correção,
+  confirmando que a chamada de rede em si funcionava.
+- Ainda não foi possível rodar os testes reais de parâmetros com a chave de API de
+  produção do estudante — `docs/experimentos-parametros.md` contém a estrutura de teste
+  pronta, mas com resultados-exemplo que precisam ser substituídos por números reais
+  depois de rodar localmente com a chave configurada.
+
+**Arquivos criados/alterados:**
+```
+prompts/system_prompt.txt
+tools/tools_definitions.py
+backend/app/services/analise_ia.py
+backend/app/models.py               (colunas justificativa, pecas_sugeridas, fonte_analise)
+backend/app/schemas.py              (campos de IA + parser de pecas_sugeridas)
+backend/app/routers/ocorrencias.py  (chama analisar_ocorrencia_com_ia)
+backend/app/routers/ordens_servico.py
+backend/app/main.py                 (mensagens atualizadas + dotenv)
+backend/.env.example
+backend/requirements.txt            (anthropic, python-dotenv)
+frontend/src/types/index.ts
+frontend/src/pages/ReportarOcorrencia.tsx
+frontend/src/pages/OrdemServicoDetalhe.tsx
+frontend/src/pages/Landing.tsx
+frontend/src/components/AppSidebar.tsx
+docs/experimentos-parametros.md
+```
+
+**Como testar:**
+```bash
+cd backend
+cp .env.example .env   # cole sua ANTHROPIC_API_KEY real
+uvicorn app.main:app --reload
+# crie um equipamento e uma ocorrência via /docs ou pelo frontend
+# confira o campo "fonte_analise" no resultado — deve vir "ia_claude"
+```
+
+**Sugestões de commit:** ver Etapa 9 do `plano-avaliacao-final-frotman.md` — commits
+granulares por peça (SDK, system prompt, cada tool, serviço de IA, integração no router,
+testes, documentação).
