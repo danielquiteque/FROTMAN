@@ -111,17 +111,28 @@ agentes especializados seria over-engineering não justificável pelo escopo da 
 
 ## 5. O Que Não Funcionou / Limitações
 
-- [Preencher após os testes reais com a chave de API — ver `docs/experimentos-parametros.md`,
-  que hoje contém uma estrutura de teste pronta mas com resultados-exemplo que precisam
-  ser substituídos pelos números reais obtidos ao rodar localmente.]
+- **A validação real com chamadas pagas à API não pôde ser concluída antes da
+  apresentação**, por um bloqueio de billing: a chave de API foi criada e autenticada com
+  sucesso, mas a conta não conseguiu adicionar créditos — três cartões diferentes foram
+  recusados pelo processador de pagamento da Anthropic (bloqueio comum de bancos
+  brasileiros em compras internacionais). O erro retornado (`400 — "Your credit balance
+  is too low"`) confirma que a integração técnica está correta: a chamada chegou até a
+  API, foi autenticada, e só não foi processada por falta de saldo — não é um bug de
+  código. Ver `docs/experimentos-parametros.md` para o log completo do erro.
+- Como consequência direta, os testes comparativos de temperatura (0.0 vs 0.3 vs 0.9)
+  ficaram documentados como plano de teste e justificativa teórica, mas sem os números
+  reais de execução — uma limitação reconhecida, não escondida.
+- O sistema de fallback foi validado nos dois cenários possíveis (sem chave configurada,
+  e erro de API com chave válida) e funcionou perfeitamente nos dois — o usuário nunca
+  vê um erro bruto, sempre recebe uma análise usável via regras, com o campo
+  `fonte_analise` deixando claro qual caminho foi usado.
 - O loop de tool use tem um limite de `MAX_TURNOS_TOOL = 4` rodadas antes de desistir e
-  cair no fallback — em teoria, um modelo poderia entrar num padrão de uso de tools sem
-  nunca chamar `registrar_analise`; isso ainda não foi observado em testes, mas é uma
-  limitação de design reconhecida.
+  cair no fallback — ainda não testado com uma chamada real bem-sucedida, então não sabemos
+  na prática quantas rodadas o modelo tipicamente usa antes de chamar `registrar_analise`.
 - Não há RAG semântico sobre manuais técnicos reais — a base de causas conhecidas é uma
   tabela estática pequena, não uma busca vetorial sobre documentação real.
 
-## 6. Próximos Passos (se o projeto continuasse)
+## 6. Próximos Passos 
 
 - Adicionar few-shot examples ao system prompt caso os testes reais mostrem
   inconsistência de comportamento
