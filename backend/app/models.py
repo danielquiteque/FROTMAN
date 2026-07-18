@@ -46,8 +46,11 @@ class OrdemServico(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     ocorrencia_id = Column(Integer, ForeignKey("ocorrencias.id"), nullable=False)
-    prioridade = Column(String, nullable=False)  # baixa | media | alta | urgente  (MOCK)
-    causa_provavel = Column(Text, nullable=True)  # texto mockado
+    prioridade = Column(String, nullable=False)  # baixa | media | alta | urgente
+    causa_provavel = Column(Text, nullable=True)
+    justificativa = Column(Text, nullable=True)  # raciocínio retornado pelo LLM (quando aplicável)
+    pecas_sugeridas = Column(Text, nullable=True)  # lista JSON-encoded de peças sugeridas
+    fonte_analise = Column(String, default="fallback_regras_sem_chave")  # ia_claude | fallback_regras_*
     status = Column(String, default="aberta")  # aberta | em_andamento | concluida
     observacoes_tecnico = Column(Text, nullable=True)
     tecnico_responsavel = Column(String, default="A definir")

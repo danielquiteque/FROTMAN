@@ -1,8 +1,9 @@
 """Schemas Pydantic — contratos de request/response da API FROTMAN."""
 import datetime as dt
+import json
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 # ---------- Equipamento ----------
@@ -52,11 +53,26 @@ class OrdemServicoOut(BaseModel):
     ocorrencia_id: int
     prioridade: str
     causa_provavel: Optional[str] = None
+    justificativa: Optional[str] = None
+    pecas_sugeridas: Optional[list[str]] = None
+    fonte_analise: str = "fallback_regras_sem_chave"
     status: str
     observacoes_tecnico: Optional[str] = None
     tecnico_responsavel: str
     criado_em: dt.datetime
     atualizado_em: dt.datetime
+
+    @field_validator("pecas_sugeridas", mode="before")
+    @classmethod
+    def _parse_pecas_sugeridas(cls, v):
+        if v is None:
+            return []
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return v
 
 
 class OrdemServicoDetalheOut(OrdemServicoOut):
@@ -85,6 +101,9 @@ class HistoricoStatusOut(BaseModel):
 class AnaliseOut(BaseModel):
     prioridade: str
     causa_provavel: str
+    justificativa: Optional[str] = None
+    pecas_sugeridas: list[str] = []
+    fonte_analise: str
     ordem_servico_id: int
     ocorrencia_id: int
 
