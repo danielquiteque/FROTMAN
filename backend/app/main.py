@@ -1,5 +1,9 @@
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()  # carrega backend/.env em desenvolvimento local; em produção (Render), a variável já vem do ambiente
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -15,9 +19,10 @@ app = FastAPI(
     title="FROTMAN API",
     description=(
         "API de triagem de manutenção de equipamentos e frotas. "
-        "Análise simulada por regras. Nenhum modelo de IA está integrado nesta versão."
+        "Análise de ocorrências via LLM real (Claude/Anthropic), com fallback "
+        "transparente por regras caso a IA não esteja configurada ou disponível."
     ),
-    version="1.0.0",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -43,7 +48,7 @@ app.include_router(dashboard.router)
 def raiz_api():
     return {
         "app": "FROTMAN API",
-        "aviso": "Análise simulada por regras. Nenhum modelo de IA está integrado nesta versão.",
+        "aviso": "Análise via LLM real (Claude), com fallback transparente por regras se a IA não estiver disponível.",
         "docs": "/docs",
     }
 
@@ -73,7 +78,7 @@ else:
     def raiz():
         return {
             "app": "FROTMAN API",
-            "aviso": "Análise simulada por regras. Nenhum modelo de IA está integrado nesta versão.",
+            "aviso": "Análise via LLM real (Claude), com fallback transparente por regras se a IA não estiver disponível.",
             "info": "frontend/dist não encontrado — rodando apenas a API (modo desenvolvimento).",
             "docs": "/docs",
         }

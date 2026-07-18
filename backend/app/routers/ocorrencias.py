@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+import json
 
 from .. import models, schemas
 from ..database import get_db
-from ..services.analise import analisar_ocorrencia
+from ..services.analise_ia import analisar_ocorrencia_com_ia
 
 router = APIRouter(prefix="/ocorrencias", tags=["ocorrencias"])
 
@@ -32,16 +33,21 @@ def criar_ocorrencia(payload: schemas.OcorrenciaCreate, db: Session = Depends(ge
     db.commit()
     db.refresh(ocorrencia)
 
-    resultado = analisar_ocorrencia(
+    resultado = analisar_ocorrencia_com_ia(
         tipo_problema=ocorrencia.tipo_problema,
         severidade=ocorrencia.severidade,
         descricao=ocorrencia.descricao,
+        equipamento_id=ocorrencia.equipamento_id,
+        db=db,
     )
 
     ordem = models.OrdemServico(
         ocorrencia_id=ocorrencia.id,
         prioridade=resultado["prioridade"],
         causa_provavel=resultado["causa_provavel"],
+        justificativa=resultado.get("justificativa"),
+        pecas_sugeridas=json.dumps(resultado.get("pecas_sugeridas") or [], ensure_ascii=False),
+        fonte_analise=resultado["fonte_analise"],
         status="aberta",
     )
     db.add(ordem)
@@ -54,6 +60,9 @@ def criar_ocorrencia(payload: schemas.OcorrenciaCreate, db: Session = Depends(ge
     return schemas.AnaliseOut(
         prioridade=ordem.prioridade,
         causa_provavel=ordem.causa_provavel,
+        justificativa=ordem.justificativa,
+        pecas_sugeridas=resultado.get("pecas_sugeridas") or [],
+        fonte_analise=ordem.fonte_analise,
         ordem_servico_id=ordem.id,
         ocorrencia_id=ocorrencia.id,
     )
