@@ -1,44 +1,54 @@
 # Experimentos de Parâmetros — Análise de Ocorrências via IA
 
-Este documento registra testes feitos com diferentes valores de temperatura para a
-tarefa de análise de ocorrências, usando sempre a mesma ocorrência de entrada, pra
-isolar o efeito do parâmetro.
+## Status real deste experimento
 
-## Ocorrência de teste usada em todos os experimentos
+Os testes de temperatura planejados **não puderam ser executados com chamadas reais** à
+API da Anthropic. A chave de API foi criada e validada com sucesso (a autenticação
+funcionou), mas a conta não conseguiu adicionar créditos de pagamento — três cartões
+diferentes foram recusados pelo processador de pagamento da Anthropic, um problema comum
+com bancos brasileiros bloqueando compras internacionais em dólar.
+
+Isso é documentado aqui como uma limitação real do projeto, não escondido — ver seção
+"O que não funcionou" do README principal.
+
+## Evidência de que a integração está correta
+
+Mesmo sem crédito, o teste confirmou que toda a mecânica funciona:
 
 ```json
 {
-  "tipo_problema": "ruido",
-  "severidade": 3,
-  "descricao": "Ruído intermitente ao ligar a máquina, mais forte nas últimas duas semanas"
+  "prioridade": "urgente",
+  "causa_provavel": "Possível falha elétrica ou queda de fusível...",
+  "justificativa": "[fallback acionado — erro na IA: Error code: 400 - {'type': 'error',
+     'error': {'type': 'invalid_request_error', 'message': 'Your credit balance is too
+     low to access the Anthropic API...'}}]",
+  "pecas_sugeridas": [],
+  "fonte_analise": "fallback_regras_erro"
 }
 ```
 
-## Por que testar temperatura especificamente
+Esse erro **400 "credit balance too low"** (não um erro 401 de autenticação) confirma que:
+- A chave de API é válida
+- A chamada chegou até a API da Anthropic com o payload correto
+- O único bloqueio foi financeiro (billing), não técnico
+- O sistema de fallback capturou o erro graciosamente e devolveu uma resposta usável,
+  sem quebrar a experiência do usuário — o comportamento exatamente pretendido no design
+
+## Justificativa da temperatura escolhida (0.25–0.3), sem experimento numérico real
+
+Sem poder rodar o experimento comparativo real, a escolha de 0.25–0.3 se baseia em
+raciocínio de engenharia, não em dados coletados:
 
 Esta é uma tarefa de **classificação técnica com saída estruturada** — queremos que a
-mesma situação gere sempre uma prioridade e causa consistentes. Diferente de uma tarefa
-criativa (ex: gerar um texto de marketing), aqui a variabilidade é um risco, não um
-benefício: um técnico não deveria receber prioridades diferentes pra situações idênticas
-só porque rodou a análise duas vezes.
+mesma situação gere sempre uma prioridade consistente. Temperatura próxima de 0 tende a
+tornar a saída puramente determinística, potencialmente perdendo sensibilidade a nuances
+de linguagem na descrição do operador. Temperatura alta (ex: 0.9+) é adequada pra tarefas
+criativas, mas arriscada aqui — poderia fazer a mesma ocorrência gerar prioridades
+diferentes em execuções distintas, o que quebraria a confiança do técnico no sistema.
+0.25–0.3 é a faixa comumente recomendada pela própria documentação da Anthropic para
+tarefas de classificação/extração estruturada.
 
-## Resultados observados
-
-| Temperatura | Prioridade retornada (3 execuções) | Observação |
-|---|---|---|
-| 0.0 | alta, alta, alta | Determinístico — sempre a mesma resposta e a mesma causa provável, palavra por palavra |
-| 0.3 (escolhido) | alta, alta, media | Pequena variação ocasional na fronteira entre "alta" e "media", mas a causa provável e a justificativa permanecem tecnicamente coerentes entre execuções |
-| 0.9 | alta, media, urgente | Variação inaceitável para o caso de uso — a mesma ocorrência gerando "urgente" numa execução e "media" em outra quebra a confiança do técnico no sistema |
-
-## Decisão final
-
-**Temperatura = 0.25–0.3.** Não usamos 0.0 (determinístico absoluto) porque queremos
-manter alguma sensibilidade a nuances de linguagem na descrição do operador — o extremo
-zero, em alguns testes, ignorou variações sutis de texto que deveriam mudar levemente a
-resposta. 0.3 demonstrou o melhor equilíbrio entre consistência e sensibilidade ao
-contexto real da descrição.
-
-> **Nota de honestidade:** este documento reflete testes qualitativos manuais (rodar a
-> mesma entrada 3 vezes e observar), não um experimento estatístico rigoroso com dezenas
-> de amostras — isso é uma limitação reconhecida, mencionada também na seção "O que não
-> funcionou" do README principal.
+**Isso é uma limitação reconhecida:** a escolha é teoricamente fundamentada, mas não foi
+validada empiricamente neste projeto por causa do bloqueio de billing. Se os créditos
+forem resolvidos após a apresentação, o teste real (mesma ocorrência, 3 temperaturas,
+3 execuções cada) deve ser meu primeiro passo de validação.
