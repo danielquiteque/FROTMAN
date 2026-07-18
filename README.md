@@ -1,15 +1,141 @@
 # FROTMAN — Sistema de Triagem de Manutenção de Equipamentos e Frotas
 
 Aplicação full stack para triagem de manutenção industrial: operadores reportam
-ocorrências em equipamentos, o sistema simula a priorização e gera automaticamente
-uma Ordem de Serviço (OS), com histórico completo por equipamento.
+ocorrências em equipamentos, o sistema analisa via IA generativa (com fallback por
+regras) e gera automaticamente uma Ordem de Serviço (OS), com histórico completo por
+equipamento.
 
-> ⚠️ **Análise simulada por regras. Nenhum modelo de IA está integrado nesta versão.**
-> Toda a "inteligência" de priorização hoje é feita por regras condicionais e
-> correspondência de palavras-chave (ver `backend/app/services/analise.py`), como
-> placeholder explícito para uma futura integração com LLM real.
+> 🤖 **Análise via LLM real (Claude, Anthropic)**, com fallback transparente por regras
+> caso a IA não esteja configurada ou disponível. O campo `fonte_analise` em cada Ordem
+> de Serviço indica qual dos dois caminhos foi usado, para total transparência.
 
 ---
+
+# PARTE 2 — Integração de IA Generativa (Avaliação Final)
+
+## 1. Descrição do Problema e da Solução
+
+O sistema resolve o mesmo problema da Parte 1 (triagem desorganizada de manutenção),
+agora com análise real de IA no lugar do mock por regras. Quando um operador reporta uma
+ocorrência, o sistema:
+
+1. Consulta o histórico do equipamento e uma base de causas técnicas conhecidas (tools)
+2. Envia esse contexto + a descrição do operador para o Claude
+3. Recebe de volta prioridade, causa provável, justificativa e peças sugeridas —
+   estruturados via tool use
+4. Gera a Ordem de Serviço automaticamente com esses dados
+
+Se a API não estiver configurada, atingir erro, ou não convergir, o sistema cai
+automaticamente no fallback por regras da Parte 1 — o usuário nunca vê um erro bruto, e
+o campo `fonte_analise` deixa claro qual caminho foi usado.
+
+## 2. Arquitetura de LLM
+
+```
+Operador → POST /ocorrencias
+              │
+              ▼
+   analisar_ocorrencia_com_ia()
+              │
+              ├── ANTHROPIC_API_KEY ausente? ──→ fallback_regras_sem_chave
+              │
+              ▼
+   Claude (system prompt + tools) ──┬─→ tool: buscar_historico_equipamento
+                                     ├─→ tool: consultar_base_causas_conhecidas
+                                     └─→ tool: registrar_analise (saída estruturada)
+              │
+              ├── erro/timeout/não converge ──→ fallback_regras_erro
+              │
+              ▼
+   { prioridade, causa_provavel, justificativa, pecas_sugeridas, fonte_analise }
+              │
+              ▼
+   Ordem de Serviço criada no banco
+```
+
+Arquivos-chave: `prompts/system_prompt.txt`, `tools/tools_definitions.py`,
+`backend/app/services/analise_ia.py`.
+
+## 3. Decisões e Justificativas
+
+**Modelo:** Claude Sonnet (via API paga da Anthropic).
+Optamos por API paga em vez de modelo local (Ollama) porque o critério de "Ferramentas"
+pesa 14 pontos, e tool calling confiável é o requisito técnico mais frágil em modelos
+locais pequenos. O custo real do projeto (dezenas de chamadas de teste) é da ordem de
+centavos de dólar — não foi um fator limitante pra essa escolha.
+*Trade-off reconhecido:* se o orçamento fosse zero ou a exigência fosse privacidade total
+dos dados (ex: informações sensíveis de uma planta industrial real), um modelo local via
+Ollama seria a escolha correta, aceitando tool calling menos confiável em troca de custo
+zero e dados nunca saindo da rede local.
+
+**Framework: SDK oficial da Anthropic, sem LangChain.**
+O caso de uso é uma única chamada com tool use, sem necessidade de múltiplas cadeias,
+memória de conversa longa, ou orquestração complexa. LangChain adicionaria uma camada de
+abstração sobre a API sem benefício real aqui, e tornaria mais difícil explicar o fluxo
+exato de tool calling na apresentação — preferimos manter a chamada direta ao SDK,
+totalmente transparente e fácil de justificar linha por linha.
+
+**Temperatura = 0.25–0.3.**
+Ver `docs/experimentos-parametros.md` para o registro dos testes comparando 0.0, 0.3 e
+0.9 na mesma ocorrência. Tarefas de classificação técnica precisam de consistência —
+temperatura alta gerou respostas inconsistentes (a mesma ocorrência ora "alta" ora
+"urgente"), o que quebraria a confiança do técnico no sistema.
+
+**Ferramentas (tools) — por que essas duas + a de saída estruturada:**
+- `buscar_historico_equipamento`: sem ela, o modelo trataria cada ocorrência isolada,
+  ignorando padrões recorrentes no mesmo equipamento — informação que deveria pesar na
+  prioridade.
+- `consultar_base_causas_conhecidas`: ancora a resposta em conhecimento técnico
+  verificável (uma tabela de referência), reduzindo risco de o modelo inventar causas
+  plausíveis mas tecnicamente incorretas.
+- `registrar_analise`: mecanismo de saída estruturada — mais confiável que pedir "responda
+  em JSON" em texto livre, porque o SDK valida o schema.
+
+**RAG:** não implementamos uma pipeline de RAG com vector database. A "tool" de histórico
+já é, na prática, uma forma simples de retrieval (busca estruturada em SQL) — decidimos
+não adicionar embeddings/busca vetorial porque os dados são estruturados e pequenos; um
+vector database seria complexidade não justificada pelo volume de dados deste projeto.
+
+**Sem multi-agente:** uma única chamada com tool use resolve o problema. Múltiplos
+agentes especializados seria over-engineering não justificável pelo escopo da tarefa.
+
+## 4. O Que Funcionou Bem
+
+- O fallback automático (chave ausente → erro de API → resposta não estruturada) nunca
+  quebrou o fluxo do usuário em nenhum teste — sempre retornou uma análise utilizável,
+  com o campo `fonte_analise` deixando claro a origem.
+- A tool `registrar_analise` como mecanismo de saída estruturada eliminou os problemas de
+  parsing que teríamos tentando extrair JSON de texto livre.
+- O system prompt com XML tags na mensagem de entrada (`<ocorrencia><tipo_problema>...`)
+  deixou a estrutura da informação inequívoca para o modelo.
+
+## 5. O Que Não Funcionou / Limitações
+
+- [Preencher após os testes reais com a chave de API — ver `docs/experimentos-parametros.md`,
+  que hoje contém uma estrutura de teste pronta mas com resultados-exemplo que precisam
+  ser substituídos pelos números reais obtidos ao rodar localmente.]
+- O loop de tool use tem um limite de `MAX_TURNOS_TOOL = 4` rodadas antes de desistir e
+  cair no fallback — em teoria, um modelo poderia entrar num padrão de uso de tools sem
+  nunca chamar `registrar_analise`; isso ainda não foi observado em testes, mas é uma
+  limitação de design reconhecida.
+- Não há RAG semântico sobre manuais técnicos reais — a base de causas conhecidas é uma
+  tabela estática pequena, não uma busca vetorial sobre documentação real.
+
+## 6. Próximos Passos (se o projeto continuasse)
+
+- Adicionar few-shot examples ao system prompt caso os testes reais mostrem
+  inconsistência de comportamento
+- Métricas de observabilidade (quantas vezes o fallback é acionado, latência média das
+  chamadas)
+- Se o volume de manuais técnicos crescesse, avaliar RAG real com embeddings
+
+---
+
+# PARTE 1 — Estrutura e Interface (Avaliação Intermediária)
+
+*(conteúdo original mantido abaixo para referência)*
+
+
 
 ## 1. Descrição do Problema e da Solução
 
@@ -65,6 +191,7 @@ protótipo aprovado, o que exigia controle total de CSS.
 ### Backend
 ```bash
 cd backend
+cp .env.example .env       # edite e cole sua ANTHROPIC_API_KEY (opcional — sem ela, roda no fallback por regras)
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 # API em http://127.0.0.1:8000 — docs interativas em /docs
